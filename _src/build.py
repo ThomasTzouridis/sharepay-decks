@@ -5,6 +5,7 @@ Same engine and the same 4 slides as the VistaMails decks (Presentations/Vistama
 Spec fields (JSON):
   slug          folder name and URL part (required). It is the slug HeyReach already sends in the `presentation` field,
                 https://sharepay-cases.com/<slug>/, so it is never invented here.
+                New leads from 2026-11-14: <company>-<first>-<last>, made by tools/slug.py. Older decks keep their slug.
   company       lead company, as it should read in text (required; the HeyReach `normalizedcompanyname`, same as message 2)
   first_name    first name of the lead
   last_name     last name of the lead (cover: "Prepared for <first_name> <last_name>, <company>")

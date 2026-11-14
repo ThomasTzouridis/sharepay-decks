@@ -2,7 +2,7 @@
 
 Hosting (2026-10-22): repo `ThomasTzouridis/sharepay-decks` (this folder), GitHub Pages on `main`, domain `sharepay-cases.com` bought on Spaceship account ACTISCALE (auto-renew on, Spaceship basic DNS: 4 GitHub A records + `www` CNAME to thomastzouridis.github.io). Deck URL: `https://sharepay-cases.com/<slug>/`. Push = live in about a minute.
 
-Slug per lead = HeyReach custom field `presentation` on the SharePay lists (workspace 169465), derived from `normalizedcompanyname`. `404.html` is served for every slug without a folder.
+Slug per lead = HeyReach custom field `presentation` on the SharePay lists (workspace 169465), derived from `normalizedcompanyname`. From 2026-11-14 every NEW lead gets `<company>-<first name>-<last name>` (e.g. `weleda-camille-ott`), made only by `py tools/slug.py "<Company>" <First> <Last>`; the same value goes into the HeyReach `presentation` field at upload and into `specs/<slug>.json`. Decks and HeyReach fields made before 2026-11-14 (the 164 batch decks, son-video) keep their old company slug and are never renamed. `404.html` is served for every slug without a folder.
 
 ## Building a deck (since 2026-10-31)
 Same engine as the Vistamails decks, SharePay copy and colours. From `_src`:
