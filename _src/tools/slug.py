@@ -5,8 +5,12 @@ uploaded, and into specs/<slug>.json. Decks and HeyReach fields made before 2026
 """
 import re, sys, unicodedata
 
+FOLD = str.maketrans({'ø': 'o', 'Ø': 'O', 'æ': 'ae', 'Æ': 'AE', 'ß': 'ss', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'þ': 'th', 'œ': 'oe', 'Œ': 'OE', '&': ' and '})
+
+
 def slug(company, first='', last=''):
     s = ' '.join(x for x in (company, first, last) if x and x.strip())
+    s = s.translate(FOLD)
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode().lower()
     return re.sub(r'[^a-z0-9]+', '-', s).strip('-')
 
