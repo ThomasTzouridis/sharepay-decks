@@ -224,7 +224,7 @@ def connected_leads(camps, every=None):
             pr = i.get('linkedInUserProfile') or {}
             lid = lid_of(pr.get('profileUrl'))
             if lid and every is not None:
-                every[lid] = {'campaign': cid, 'list': c['list'], 'url': pr.get('profileUrl') or '', 'msg_status': i.get('leadMessageStatus') or 'None',
+                every[lid] = {'campaign': cid, 'list': c['list'], 'url': pr.get('profileUrl') or '', 'linkedin_id': str(pr.get('linkedin_id') or ''), 'msg_status': i.get('leadMessageStatus') or 'None',
                               'first': (pr.get('firstName') or '').strip(), 'last': (pr.get('lastName') or '').strip()}
             if lid and st not in NOT_CONNECTED and CONNECTED.search(st):
                 out[lid] = {'status': st, 'campaign': cid, 'campaign_name': c['name'], 'sender': i.get('linkedInSenderFullName') or c['sender'],
@@ -259,7 +259,12 @@ def set_presentation(lead, link):
     """Writes the presentation custom field on the campaign lead; HeyReach answers with the list lead, which carries the same field
     (verified 2026-11-14), so one call updates both. Raises unless the answer shows the new link."""
     body = {'leadMemberIdOrUrl': lead['url'], 'customFields': {'presentation': link}}
-    d = hr('/campaign/UpdateLeadCustomFields/campaigns/%d/leads/custom-fields' % lead['campaign'], body, 'PATCH')
+    path = '/campaign/UpdateLeadCustomFields/campaigns/%d/leads/custom-fields' % lead['campaign']
+    try: d = hr(path, body, 'PATCH')
+    except Exception:
+        if not lead.get('linkedin_id'): raise
+        body['leadMemberIdOrUrl'] = lead['linkedin_id']   # accented profile URLs (gänsdorfer) are not found by URL, the numeric id works
+        d = hr(path, body, 'PATCH')
     if link not in json.dumps(d): raise RuntimeError('HeyReach did not confirm the presentation field: %s' % json.dumps(d)[:200])
 
 
