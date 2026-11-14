@@ -263,6 +263,9 @@ def set_presentation(lead, link):
     if link not in json.dumps(d): raise RuntimeError('HeyReach did not confirm the presentation field: %s' % json.dumps(d)[:200])
 
 
+FIX_PER_RUN = 800   # presentation field writes per run (about 0.5 s each), keeps the deck builds inside the job timeout
+
+
 def want_slug(f, info):
     """The rule slug for a lead not messaged yet: <company>-<first>-<last>. A field that already holds it, or it plus -2, -3
     (the same person twice), is kept."""
@@ -483,9 +486,10 @@ def main():
         json.dump(allmap, open(LEADMAP, 'w', encoding='utf-8'), indent=0, ensure_ascii=False)
         # slug rule: every lead not messaged yet carries https://sharepay-cases.com/<company>-<first>-<last>/
         fixed, ferr = 0, 0
-        for lid, e in every.items():
+        for lid, e in sorted(every.items(), key=lambda kv: kv[0] not in conn):   # connected leads first, their deck is built below
             f = facts.get(lid)
             if not f or (e['msg_status'] or 'None') != 'None' or not f.get('company'): continue
+            if fixed + ferr >= FIX_PER_RUN: say('slug rule: cap of %d writes reached, the rest follows next run' % FIX_PER_RUN); break
             w = want_slug(f, e)
             if not w or w == f.get('slug'): continue
             if a.dry: say('would set', e['url'], f.get('link'), '->', SITE + w + '/'); fixed += 1; continue
