@@ -9,7 +9,7 @@ Spec fields (JSON):
   company       lead company, as it should read in text (required; the HeyReach `normalizedcompanyname`, same as message 2)
   first_name    first name of the lead
   last_name     last name of the lead (cover: "Prepared for <first_name> <last_name>, <company>")
-  domain        the lead's site, shown under the screenshot (required)
+  domain        the lead's site, shown under the screenshot (with shot; leave both out for a lead without a website, the cover then has no picture)
   shot          file in assets/shots/ (required, the cover shows it; take it with tools/shot.py <slug> ../assets/shots https://<domain>)
   logo          file in assets/leadlogos/, ALWAYS produced by tools/logo.py (py tools/logo.py <slug> "<Company>" https://<domain> --bg #0b1220 --out ../assets/leadlogos --spec specs/<slug>.json --badge-key logo_badge):
                 it picks the site's wordmark, rejects icons, photos and pixel-small rasters, paints one-colour logos white, puts dark
@@ -56,9 +56,14 @@ for path in sys.argv[1:]:
     e = html.escape
     co = e(sp['company'])
     cv = 'split' if sp.get('copy') == 'split' else ''
-    for k in ('slug', 'company', 'domain', 'shot'):
+    for k in ('slug', 'company'):
         assert sp.get(k), f'{path}: missing {k}'
-    assert os.path.exists(os.path.join(ROOT, 'assets', 'shots', sp['shot'])), f'{path}: shot file missing'
+    # No website (Thomas 2026-11-16): the same deck without the website picture. domain and shot come together or not at all.
+    assert bool(sp.get('domain')) == bool(sp.get('shot')), f'{path}: domain and shot must both be set or both be missing'
+    site_fig = '<style>.cover{padding-right:6cqw}.cover .sub{max-width:44ch}</style>'   # no picture: the cover text takes the full width
+    if sp.get('shot'):
+        assert os.path.exists(os.path.join(ROOT, 'assets', 'shots', sp['shot'])), f'{path}: shot file missing'
+        site_fig = f'<figure class="site"><img src="../assets/shots/{sp["shot"]}" alt=""><figcaption>{e(sp["domain"])}</figcaption></figure>'
     name = ' '.join(x for x in (sp.get('first_name', '').strip(), sp.get('last_name', '').strip()) if x)
     prep = f"{e(name)}, {co}" if name else co
     mark = f'<span class="co">{co}</span>'
@@ -73,7 +78,7 @@ for path in sys.argv[1:]:
         img = f'<img class="ll" src="../assets/leadlogos/{sp["logo"]}" alt="{co}" onerror="{fb}">'
         mark = f'<span class="llb">{img}</span>' if sp.get('logo_badge') else img
     out = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
-    for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'DOMAIN': e(sp['domain']), 'SHOT': sp['shot'],
+    for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'SITE_FIG': site_fig,
                  'COVER_LINE': e(sp.get('cover_line') or f"Fewer checkout drop-offs for {sp['company']}, from the shoppers you already have."),
                  'PROOF_HEAD': e(sp.get('proof_head') or "What it did for others."),
                  'O_HEAD': O_HEADS[cv].format(co=co), 'P_SUPERDRY': P_SUPERDRY[cv], 'P_ASDA': P_ASDA[cv], 'O_TARGET': O_TARGET.format(co=co), 'O_COND': O_COND.format(co=co), 'O_MISS': O_MISS.format(co=co),

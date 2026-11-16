@@ -11,7 +11,7 @@ Every live SharePay HeyReach campaign "SharePay | <Sender>" (key HEYREACH_SHAREP
    404.html ("being prepared") is the fallback for every slug not built yet.
 Website: list custom fields Company_domain / Domain / Company_website / companywebsite, else Supabase ocean_leads (must share a word
 with the company name). An existing spec of the same company (the 164 decks of 2026-10-31) gives domain and screenshot.
-Rules: a slug is built once; infrastructure failures retry on later runs, max 3; no website = no deck and one Slack DM.
+Rules: a slug is built once; infrastructure failures retry on later runs, max 3; no website (or no screenshot after 3 tries) = the same deck without the website picture and logo.
 Control check every run: the URL HeyReach sends must end in the lead's slug and answer 200 once built, otherwise a DM.
   python3 _src/auto/sp_poll.py            real run
   python3 _src/auto/sp_poll.py --dry      who is connected, what would be built, which fields would change; changes nothing
@@ -338,26 +338,27 @@ def build(slug, lead, state):
     dst = os.path.join(ROOT, 'assets', 'shots', slug + '.jpg')
     old_shot = os.path.join(ROOT, 'assets', 'shots', lead.get('reuse_shot') or '-')
     if lead.get('reuse_shot') and not os.path.exists(dst) and os.path.exists(old_shot): shutil.copyfile(old_shot, dst)
-    ok, note = take_shot(slug, lead['domain'])
+    no_site = not lead['domain']   # no website, or no screenshot after MAX_ATTEMPTS: same deck without the website picture and logo
+    ok, note = (True, 'no website, deck without website picture') if no_site else take_shot(slug, lead['domain'])
     if not ok:
         if st['attempts'] >= MAX_ATTEMPTS:
-            st.update(status='failed', error=note[:300], at=now())
-            alert('deck for %s (/%s/, %s) failed %d times: %s. The fallback page stays.' % (lead['company'], slug, lead['domain'], st['attempts'], note[-200:]))
+            no_site = True; note = 'no screenshot after %d tries, deck without website picture: %s' % (st['attempts'], note[-150:])
         else:
             st.update(status='retry', error=note[:300], at=now()); say('retry next run:', slug, note[-200:])
-        return False
+            return False
     spec_path = os.path.join(SRC, 'specs', slug + '.json')
-    spec = {'slug': slug, 'company': lead['company'], 'first_name': lead['first'], 'last_name': lead['last'], 'domain': lead['domain'],
-            'shot': slug + '.jpg'}
+    spec = {'slug': slug, 'company': lead['company'], 'first_name': lead['first'], 'last_name': lead['last']}
+    if not no_site: spec.update(domain=lead['domain'], shot=slug + '.jpg')
     if lead.get('copy'): spec['copy'] = lead['copy']
     json.dump(spec, open(spec_path, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
     # logo: optional, never blocks the deck
     try:
+        if no_site: raise RuntimeError('no website, no logo')
         rc, out = run([PY, os.path.join(SRC, 'tools', 'logo.py'), slug, lead['company'], 'https://' + lead['domain'], '--bg', BG, '--out', 'assets/leadlogos',
                        '--spec', spec_path, '--badge-key', 'logo_badge', '--on-none', 'remove'], 300)
         logo_note = next((l for l in out.splitlines() if l.startswith('RESULT')), 'logo tool gave no RESULT line')
     except Exception as e:
-        logo_note = 'logo tool crashed: %s' % str(e)[-150:]
+        logo_note = 'company name as text' if no_site else 'logo tool crashed: %s' % str(e)[-150:]
         sp = json.load(open(spec_path, encoding='utf-8')); sp.pop('logo', None); sp.pop('logo_badge', None)
         json.dump(sp, open(spec_path, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
     rc, out = run([PY, os.path.join(SRC, 'build.py'), spec_path], 120, cwd=SRC)
@@ -433,8 +434,7 @@ def resolve(lid, info, f, state):
     domain = (old or {}).get('domain') or next(iter(f.get('webs') or []), '') or next((h for h in cands if site_matches(company, h)), '')
     if not domain and cands and sb_company and site_matches(sb_company, cands[0]) and site_matches(company, cands[0]):
         domain = cands[0]
-    if not domain:
-        return None, 'no website: Supabase %s for company "%s"' % (('candidates %s do not match the name' % cands) if cands else 'has no row for the LinkedIn handle', company)
+    # no website: the lead still gets the same deck, built without the website picture and logo (Thomas 2026-11-16)
     slug = f.get('slug') or rule_slug(company, f.get('first') or info['first'], f.get('last') or info['last'])[:80].strip('-')
     if not slug: return None, 'no slug'
     return {'slug': slug, 'lang': f.get('lang', ''), 'company': company, 'first': f.get('first') or info['first'], 'last': f.get('last') or info['last'], 'domain': domain,
