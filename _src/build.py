@@ -28,9 +28,9 @@ BG = '#0b1220'   # the deck --paper, the logo tool checks against it
 BOOK = 'https://cal.com/sharepay/discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["stripe.png", "adyen.png", "worldpay.png", "visa.png", "mastercard.png", "amex.png"])
-O_HEAD = ("We put SharePay Split on {co}'s checkout. A shopper who wants the order but cannot pay all of it right then forwards the "
-          "checkout to someone who can, or splits it with their group, each on their own card. The same system cut Superdry's "
-          "checkout drop-offs by 23% in under 90 days.")
+O_HEAD = ("We put SharePay Split on {co}'s checkout. A shopper who wants the order but does not want to pay all of it alone splits "
+          "the bill with their group. Everyone pays their share on their own card and it arrives as one order. The same system cut "
+          "Superdry's checkout drop-offs by 23% in under 90 days.")
 O_TARGET = ("Fewer checkout drop-offs for {co}. Orders that would have died at the payment step complete instead, fully funded, "
             "in {co}'s own Stripe or Adyen account.")
 O_COND = ("3% of the new business it brings in, nothing else. No setup fee, no retainer, no monthly fee, and no charge when a "
