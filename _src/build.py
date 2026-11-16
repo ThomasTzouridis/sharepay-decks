@@ -28,9 +28,24 @@ BG = '#0b1220'   # the deck --paper, the logo tool checks against it
 BOOK = 'https://cal.com/sharepay/discovery-call'
 LOGOS = ''.join(f'<img src="../assets/clients/{n}" alt="">' for n in
                 ["stripe.png", "adyen.png", "worldpay.png", "visa.png", "mastercard.png", "amex.png"])
-O_HEAD = ("We put SharePay Split on {co}'s checkout. A shopper who wants the order but does not want to pay all of it alone splits "
-          "the bill with their group. Everyone pays their share on their own card and it arrives as one order. The same system cut "
-          "Superdry's checkout drop-offs by 23% in under 90 days.")
+# Two copy variants (Thomas 2026-11-16). spec "copy": "split" = the operator campaigns "SharePay | <Sender> (Operators)",
+# anything else = the e-commerce campaigns "SharePay | <Sender>" with the original forwarding copy.
+O_HEADS = {
+    '': ("We put SharePay Split on {co}'s checkout. A shopper who wants the order but cannot pay all of it right then forwards the "
+         "checkout to someone who can, or splits it with their group, each on their own card. The same system cut Superdry's "
+         "checkout drop-offs by 23% in under 90 days."),
+    'split': ("We put SharePay Split on {co}'s checkout. A shopper who wants the order but does not want to pay all of it alone splits "
+              "the bill with their group. Everyone pays their share on their own card and it arrives as one order. The same system cut "
+              "Superdry's checkout drop-offs by 23% in under 90 days."),
+}
+P_SUPERDRY = {
+    '': "Shoppers who wanted the order but could not pay all of it right then forwarded the checkout to someone who could, or split it with their group. Carts that used to die at the payment step completed instead.",
+    'split': "Shoppers who wanted the order but did not want to pay all of it alone split the bill with their group, each on their own card. Carts that used to die at the payment step completed instead.",
+}
+P_ASDA = {
+    '': "The same forwarding ecosystem on a grocery-scale checkout. Declined and abandoned baskets were offered a split instead of an exit, and nothing was charged until each order was fully covered.",
+    'split': "The same split payment on a grocery-scale checkout. Declined and abandoned baskets were offered a split instead of an exit, and nothing was charged until each order was fully covered.",
+}
 O_TARGET = ("Fewer checkout drop-offs for {co}. Orders that would have died at the payment step complete instead, fully funded, "
             "in {co}'s own Stripe or Adyen account.")
 O_COND = ("3% of the new business it brings in, nothing else. No setup fee, no retainer, no monthly fee, and no charge when a "
@@ -40,6 +55,7 @@ for path in sys.argv[1:]:
     sp = json.load(open(path, encoding='utf-8'))
     e = html.escape
     co = e(sp['company'])
+    cv = 'split' if sp.get('copy') == 'split' else ''
     for k in ('slug', 'company', 'domain', 'shot'):
         assert sp.get(k), f'{path}: missing {k}'
     assert os.path.exists(os.path.join(ROOT, 'assets', 'shots', sp['shot'])), f'{path}: shot file missing'
@@ -60,7 +76,7 @@ for path in sys.argv[1:]:
     for k, v in {'COMPANY': co, 'PREPARED': prep, 'CO_MARK': mark, 'DOMAIN': e(sp['domain']), 'SHOT': sp['shot'],
                  'COVER_LINE': e(sp.get('cover_line') or f"Fewer checkout drop-offs for {sp['company']}, from the shoppers you already have."),
                  'PROOF_HEAD': e(sp.get('proof_head') or "What it did for others."),
-                 'O_HEAD': O_HEAD.format(co=co), 'O_TARGET': O_TARGET.format(co=co), 'O_COND': O_COND.format(co=co), 'O_MISS': O_MISS.format(co=co),
+                 'O_HEAD': O_HEADS[cv].format(co=co), 'P_SUPERDRY': P_SUPERDRY[cv], 'P_ASDA': P_ASDA[cv], 'O_TARGET': O_TARGET.format(co=co), 'O_COND': O_COND.format(co=co), 'O_MISS': O_MISS.format(co=co),
                  'LOGOS': LOGOS, 'BOOKING_URL': sp.get('booking_url') or BOOK}.items():
         out = out.replace('{{' + k + '}}', v)
     assert '{{' not in out, path

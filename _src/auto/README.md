@@ -11,6 +11,9 @@ Every run, for every live HeyReach campaign `SharePay | <Sender>` (workspace key
    `tools/logo.py`), pushed, live at `https://sharepay-cases.com/<slug>/` before message 2 (connect + 3 h + 4 days). Max 40 per run.
 3. Control check: the link HeyReach sends must end in the lead's slug and answer 200. Failures and leads without a website go to Slack.
 
+Copy variants (Thomas 2026-11-16): campaigns named `SharePay | <Sender> (Operators)` build with spec `"copy": "split"` (split the bill only),
+campaigns named `SharePay | <Sender>` (e-commerce) build with the original forwarding copy. Texts live in `_src/build.py` (O_HEADS, P_SUPERDRY, P_ASDA).
+
 Files: `sp_poll_state.json` (build status per slug), `sp_leads.json` (lead map), `sp_poll.lock`, logs in `runs/` (ignored).
 
     python3 _src/auto/sp_poll.py --dry      shows what would change, changes nothing

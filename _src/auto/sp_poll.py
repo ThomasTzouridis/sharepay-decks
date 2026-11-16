@@ -208,7 +208,8 @@ def campaigns():
         if (c.get('status') or '').upper() in SKIP_STATUS: continue
         m = CAMP_RE.match(c.get('name') or '')
         if not m: continue
-        out[c['id']] = {'name': c.get('name') or '', 'sender': m.group(1), 'copy': '', 'list': c.get('linkedInUserListId'),
+        ops = re.search(r'\(\s*operators\s*\)\s*$', m.group(1), re.I)   # operator campaigns get the split-only deck copy
+        out[c['id']] = {'name': c.get('name') or '', 'sender': re.sub(r'\s*\([^)]*\)\s*$', '', m.group(1)), 'copy': 'split' if ops else '', 'list': c.get('linkedInUserListId'),
                         'status': c.get('status') or ''}
     return out
 
@@ -348,6 +349,7 @@ def build(slug, lead, state):
     spec_path = os.path.join(SRC, 'specs', slug + '.json')
     spec = {'slug': slug, 'company': lead['company'], 'first_name': lead['first'], 'last_name': lead['last'], 'domain': lead['domain'],
             'shot': slug + '.jpg'}
+    if lead.get('copy'): spec['copy'] = lead['copy']
     json.dump(spec, open(spec_path, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
     # logo: optional, never blocks the deck
     try:
